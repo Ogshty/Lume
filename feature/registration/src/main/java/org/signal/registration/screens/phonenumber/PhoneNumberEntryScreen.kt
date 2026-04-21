@@ -5,6 +5,13 @@
 
 package org.signal.registration.screens.phonenumber
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,12 +47,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
@@ -55,6 +64,7 @@ import org.signal.core.ui.compose.AllDevicePreviews
 import org.signal.core.ui.compose.Buttons
 import org.signal.core.ui.compose.Dialogs
 import org.signal.core.ui.compose.Previews
+import org.signal.core.ui.compose.SignalIcons
 import org.signal.core.util.E164Util
 import org.signal.registration.R
 import org.signal.registration.screens.phonenumber.PhoneNumberEntryState.OneTimeEvent
@@ -116,83 +126,109 @@ fun PhoneNumberScreen(
 private fun ScreenContent(state: PhoneNumberEntryState, onEvent: (PhoneNumberEntryScreenEvents) -> Unit) {
   val selectedCountry = state.countryName
   val selectedCountryEmoji = state.countryEmoji
-
   val scrollState = rememberScrollState()
+
+  val headerAnimationState = remember { MutableTransitionState(false).apply { targetState = true } }
+  val contentAnimationState = remember { MutableTransitionState(false).apply { targetState = true } }
+  val footerAnimationState = remember { MutableTransitionState(false).apply { targetState = true } }
 
   Column(
     modifier = Modifier
       .fillMaxSize()
       .verticalScroll(scrollState)
+      .padding(horizontal = 24.dp)
   ) {
-    Spacer(modifier = Modifier.height(56.dp))
+    Spacer(modifier = Modifier.height(64.dp))
 
-    Text(
-      text = stringResource(R.string.RegistrationActivity_phone_number),
-      style = MaterialTheme.typography.headlineMedium,
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 24.dp)
-    )
+    AnimatedVisibility(
+      visibleState = headerAnimationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 }
+    ) {
+      Column {
+        Text(
+          text = stringResource(R.string.RegistrationActivity_phone_number),
+          style = MaterialTheme.typography.headlineMedium.copy(
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (-0.5).sp
+          ),
+          modifier = Modifier.fillMaxWidth()
+        )
 
-    Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-    Text(
-      text = stringResource(R.string.RegistrationActivity_you_will_receive_a_verification_code),
-      style = MaterialTheme.typography.bodyLarge,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 24.dp)
-    )
+        Text(
+          text = stringResource(R.string.RegistrationActivity_you_will_receive_a_verification_code),
+          style = MaterialTheme.typography.bodyLarge,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          modifier = Modifier.fillMaxWidth()
+        )
+      }
+    }
 
-    Spacer(modifier = Modifier.height(36.dp))
+    Spacer(modifier = Modifier.height(48.dp))
 
-    CountryPicker(
-      emoji = selectedCountryEmoji,
-      country = selectedCountry,
-      onClick = { onEvent(PhoneNumberEntryScreenEvents.CountryPicker) },
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 24.dp)
-        .testTag(TestTags.PHONE_NUMBER_COUNTRY_PICKER)
-    )
+    AnimatedVisibility(
+      visibleState = contentAnimationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 4 }
+    ) {
+      Column {
+        CountryPicker(
+          emoji = selectedCountryEmoji,
+          country = selectedCountry,
+          onClick = { onEvent(PhoneNumberEntryScreenEvents.CountryPicker) },
+          modifier = Modifier
+            .fillMaxWidth()
+            .testTag(TestTags.PHONE_NUMBER_COUNTRY_PICKER)
+        )
 
-    Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-    PhoneNumberInputFields(
-      hasValidCountry = state.countryName.isNotEmpty(),
-      countryCode = state.countryCode,
-      formattedNumber = state.formattedNumber,
-      onCountryCodeChanged = { onEvent(PhoneNumberEntryScreenEvents.CountryCodeChanged(it)) },
-      onPhoneNumberChanged = { onEvent(PhoneNumberEntryScreenEvents.PhoneNumberChanged(it)) },
-      onPhoneNumberEntered = { onEvent(PhoneNumberEntryScreenEvents.PhoneNumberEntered) },
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 24.dp)
-    )
+        PhoneNumberInputFields(
+          hasValidCountry = state.countryName.isNotEmpty(),
+          countryCode = state.countryCode,
+          formattedNumber = state.formattedNumber,
+          onCountryCodeChanged = { onEvent(PhoneNumberEntryScreenEvents.CountryCodeChanged(it)) },
+          onPhoneNumberChanged = { onEvent(PhoneNumberEntryScreenEvents.PhoneNumberChanged(it)) },
+          onPhoneNumberEntered = { onEvent(PhoneNumberEntryScreenEvents.PhoneNumberEntered) },
+          modifier = Modifier.fillMaxWidth()
+        )
+      }
+    }
 
     Spacer(modifier = Modifier.weight(1f))
 
-    Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 32.dp, vertical = 16.dp),
-      horizontalArrangement = Arrangement.End,
-      verticalAlignment = Alignment.CenterVertically
+    AnimatedVisibility(
+      visibleState = footerAnimationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 }
     ) {
-      if (state.showSpinner) {
-        CircularProgressIndicator(
-          modifier = Modifier.size(24.dp),
-          strokeWidth = 3.dp,
-          color = MaterialTheme.colorScheme.primary
-        )
-      } else {
-        Buttons.LargeTonal(
-          onClick = { onEvent(PhoneNumberEntryScreenEvents.PhoneNumberEntered) },
-          enabled = state.countryCode.isNotEmpty() && state.nationalNumber.isNotEmpty(),
-          modifier = Modifier.testTag(TestTags.PHONE_NUMBER_NEXT_BUTTON)
-        ) {
-          Text(stringResource(R.string.RegistrationActivity_next))
+      Row(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(vertical = 24.dp),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        if (state.showSpinner) {
+          CircularProgressIndicator(
+            modifier = Modifier.size(24.dp),
+            strokeWidth = 3.dp,
+            color = MaterialTheme.colorScheme.primary
+          )
+        } else {
+          Buttons.LargeTonal(
+            onClick = { onEvent(PhoneNumberEntryScreenEvents.PhoneNumberEntered) },
+            enabled = state.countryCode.isNotEmpty() && state.nationalNumber.isNotEmpty(),
+            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier.testTag(TestTags.PHONE_NUMBER_NEXT_BUTTON)
+          ) {
+            Text(
+              text = stringResource(R.string.RegistrationActivity_next),
+              style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+            )
+          }
         }
       }
     }
@@ -208,35 +244,44 @@ private fun CountryPicker(
 ) {
   Box(
     modifier = modifier
-      .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-      .background(MaterialTheme.colorScheme.outline)
-      .padding(bottom = 1.dp)
-      .background(
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
-      )
+      .clip(RoundedCornerShape(28.dp))
+      .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
       .clickable(onClick = onClick)
-      .height(56.dp)
+      .height(72.dp)
   ) {
     Row(
       modifier = Modifier
         .fillMaxSize()
-        .padding(start = 16.dp, end = 12.dp),
+        .padding(horizontal = 16.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
-      if (emoji.isNotEmpty()) {
-        Text(
-          text = emoji,
-          fontSize = 24.sp
-        )
-
-        Spacer(modifier = Modifier.width(16.dp))
+      Box(
+        modifier = Modifier
+          .size(40.dp)
+          .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp)),
+        contentAlignment = Alignment.Center
+      ) {
+        if (emoji.isNotEmpty()) {
+          Text(
+            text = emoji,
+            style = MaterialTheme.typography.titleLarge
+          )
+        } else {
+          Icon(
+            painter = SignalIcons.Search.painter,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.size(20.dp)
+          )
+        }
       }
+
+      Spacer(modifier = Modifier.width(16.dp))
 
       Text(
         text = country.takeIf { country.isNotEmpty() } ?: stringResource(R.string.RegistrationActivity_select_a_country),
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+        color = if (country.isNotEmpty()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.weight(1f)
       )
 
@@ -306,7 +351,7 @@ private fun PhoneNumberInputFields(
       value = countryCode,
       onValueChange = onCountryCodeChanged,
       modifier = Modifier
-        .width(76.dp)
+        .width(88.dp)
         .testTag(TestTags.PHONE_NUMBER_COUNTRY_CODE_FIELD),
       prefix = {
         Text(
@@ -320,16 +365,20 @@ private fun PhoneNumberInputFields(
         imeAction = ImeAction.Done
       ),
       singleLine = true,
+      shape = RoundedCornerShape(28.dp),
       textStyle = MaterialTheme.typography.bodyLarge.copy(
-        color = MaterialTheme.colorScheme.onSurfaceVariant
+        color = MaterialTheme.colorScheme.onSurface,
+        fontWeight = FontWeight.Medium
       ),
       colors = TextFieldDefaults.colors(
-        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        unfocusedIndicatorColor = Color.Transparent,
+        focusedIndicatorColor = Color.Transparent
       )
     )
 
-    Spacer(modifier = Modifier.width(20.dp))
+    Spacer(modifier = Modifier.width(12.dp))
 
     TextField(
       value = phoneNumberTextFieldValue,
@@ -341,7 +390,7 @@ private fun PhoneNumberInputFields(
         .weight(1f)
         .focusRequester(focusRequester)
         .testTag(TestTags.PHONE_NUMBER_PHONE_FIELD),
-      label = {
+      placeholder = {
         Text(stringResource(R.string.RegistrationActivity_phone_number_description))
       },
       keyboardOptions = KeyboardOptions(
@@ -352,12 +401,16 @@ private fun PhoneNumberInputFields(
         onDone = { onPhoneNumberEntered() }
       ),
       singleLine = true,
+      shape = RoundedCornerShape(28.dp),
       textStyle = MaterialTheme.typography.bodyLarge.copy(
-        color = MaterialTheme.colorScheme.onSurface
+        color = MaterialTheme.colorScheme.onSurface,
+        fontWeight = FontWeight.Medium
       ),
       colors = TextFieldDefaults.colors(
-        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        unfocusedIndicatorColor = Color.Transparent,
+        focusedIndicatorColor = Color.Transparent
       )
     )
   }

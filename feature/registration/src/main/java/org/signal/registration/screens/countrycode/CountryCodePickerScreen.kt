@@ -5,16 +5,27 @@
 
 package org.signal.registration.screens.countrycode
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -48,6 +59,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import org.signal.core.ui.compose.AllDevicePreviews
 import org.signal.core.ui.compose.Dividers
@@ -67,12 +79,24 @@ fun CountryCodePickerScreen(
   state: CountryCodeState,
   onEvent: (CountryCodePickerScreenEvents) -> Unit
 ) {
+  val animationState = remember {
+    MutableTransitionState(false).apply {
+      targetState = true
+    }
+  }
+
   Scaffold(
     topBar = {
       Scaffolds.DefaultTopAppBar(
         title = stringResource(R.string.CountryCodeSelectScreen__your_country),
         titleContent = { _, title ->
-          Text(text = title, style = MaterialTheme.typography.titleLarge)
+          Text(
+            text = title,
+            style = MaterialTheme.typography.headlineMedium.copy(
+              fontWeight = FontWeight.Bold,
+              letterSpacing = (-0.5).sp
+            )
+          )
         },
         onNavigationClick = { onEvent(CountryCodePickerScreenEvents.Dismissed) },
         navigationIcon = SignalIcons.X.imageVector,
@@ -86,7 +110,9 @@ fun CountryCodePickerScreen(
     LazyColumn(
       state = listState,
       horizontalAlignment = Alignment.CenterHorizontally,
-      modifier = Modifier.padding(padding)
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(padding)
     ) {
       stickyHeader {
         SearchBar(
@@ -97,23 +123,48 @@ fun CountryCodePickerScreen(
 
       if (state.countryList.isEmpty()) {
         item {
-          CircularProgressIndicator(
-            modifier = Modifier.size(56.dp)
-          )
+          Box(modifier = Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(
+              modifier = Modifier.size(56.dp),
+              color = MaterialTheme.colorScheme.primary
+            )
+          }
         }
       } else if (state.query.isEmpty()) {
         if (state.commonCountryList.isNotEmpty()) {
-          items(state.commonCountryList) { country ->
-            CountryItem(country, onEvent)
+          itemsIndexed(state.commonCountryList) { index, country ->
+            val itemAnimationState = remember {
+              MutableTransitionState(false).apply {
+                targetState = true
+              }
+            }
+            AnimatedVisibility(
+              visibleState = itemAnimationState,
+              enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+                slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 }
+            ) {
+              CountryItem(country, onEvent)
+            }
           }
 
           item {
-            Dividers.Default()
+            Dividers.Default(modifier = Modifier.padding(vertical = 8.dp))
           }
         }
 
-        items(state.countryList) { country ->
-          CountryItem(country, onEvent)
+        itemsIndexed(state.countryList) { index, country ->
+          val itemAnimationState = remember {
+            MutableTransitionState(false).apply {
+              targetState = true
+            }
+          }
+          AnimatedVisibility(
+            visibleState = itemAnimationState,
+            enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+              slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 }
+          ) {
+            CountryItem(country, onEvent)
+          }
         }
       } else {
         items(state.filteredList) { country ->
@@ -123,8 +174,10 @@ fun CountryCodePickerScreen(
     }
 
     LaunchedEffect(state.startingIndex) {
-      coroutineScope.launch {
-        listState.scrollToItem(index = state.startingIndex)
+      if (state.startingIndex != 0) {
+        coroutineScope.launch {
+          listState.scrollToItem(index = state.startingIndex)
+        }
       }
     }
   }
@@ -142,29 +195,40 @@ private fun CountryItem(
   Row(
     verticalAlignment = Alignment.CenterVertically,
     modifier = Modifier
-      .padding(horizontal = 24.dp)
+      .padding(horizontal = 16.dp, vertical = 4.dp)
       .fillMaxWidth()
-      .defaultMinSize(minHeight = 56.dp)
+      .defaultMinSize(minHeight = 64.dp)
+      .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(28.dp))
       .clickable { onEvent(CountryCodePickerScreenEvents.CountrySelected(country)) }
+      .padding(horizontal = 16.dp)
   ) {
-    Text(
-      text = emoji,
-      modifier = Modifier.size(24.dp)
-    )
+    Box(
+      modifier = Modifier
+        .size(40.dp)
+        .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp)),
+      contentAlignment = Alignment.Center
+    ) {
+      Text(
+        text = emoji,
+        style = MaterialTheme.typography.titleLarge
+      )
+    }
 
     if (query.isEmpty()) {
       Text(
         text = name.ifEmpty { stringResource(R.string.CountryCodeSelectScreen__unknown_country) },
         modifier = Modifier
-          .padding(start = 24.dp)
+          .padding(start = 16.dp)
           .weight(1f),
-        style = MaterialTheme.typography.bodyLarge
+        style = MaterialTheme.typography.bodyLarge,
+        fontWeight = FontWeight.Medium
       )
       Text(
         text = code,
-        modifier = Modifier.padding(start = 24.dp),
+        modifier = Modifier.padding(start = 16.dp),
         style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.Bold
       )
     } else {
       val annotatedName = buildAnnotatedString {
@@ -173,7 +237,7 @@ private fun CountryItem(
         if (startIndex >= 0) {
           append(name.substring(0, startIndex))
 
-          withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+          withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) {
             append(name.substring(startIndex, startIndex + query.length))
           }
 
@@ -189,7 +253,7 @@ private fun CountryItem(
         if (startIndex >= 0) {
           append(code.substring(0, startIndex))
 
-          withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+          withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)) {
             append(code.substring(startIndex, startIndex + query.length))
           }
 
@@ -202,15 +266,17 @@ private fun CountryItem(
       Text(
         text = annotatedName,
         modifier = Modifier
-          .padding(start = 24.dp)
+          .padding(start = 16.dp)
           .weight(1f),
-        style = MaterialTheme.typography.bodyLarge
+        style = MaterialTheme.typography.bodyLarge,
+        fontWeight = FontWeight.Medium
       )
       Text(
         text = annotatedCode,
-        modifier = Modifier.padding(start = 24.dp),
+        modifier = Modifier.padding(start = 16.dp),
         style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.Bold
       )
     }
   }
@@ -264,13 +330,13 @@ private fun SearchBar(
         KeyboardType.Text
       }
     ),
-    shape = RoundedCornerShape(32.dp),
+    shape = RoundedCornerShape(28.dp),
     modifier = modifier
       .background(MaterialTheme.colorScheme.background)
-      .padding(bottom = 18.dp)
+      .padding(bottom = 16.dp)
       .padding(horizontal = 16.dp)
       .fillMaxWidth()
-      .defaultMinSize(minHeight = 54.dp)
+      .defaultMinSize(minHeight = 56.dp)
       .focusRequester(focusRequester),
     visualTransformation = VisualTransformation.None,
     colors = TextFieldDefaults.colors(

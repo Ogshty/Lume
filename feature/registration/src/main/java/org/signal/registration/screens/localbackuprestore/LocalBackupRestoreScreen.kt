@@ -9,9 +9,16 @@ import android.net.Uri
 import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +35,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -46,12 +54,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import org.signal.core.ui.compose.AllDevicePreviews
 import org.signal.core.ui.compose.BottomSheets
@@ -118,6 +129,11 @@ private fun SelectFolderContent(
   modifier: Modifier = Modifier
 ) {
   val scrollState = rememberScrollState()
+  val animationState = remember {
+    MutableTransitionState(false).apply {
+      targetState = true
+    }
+  }
 
   Column(
     modifier = modifier
@@ -127,56 +143,110 @@ private fun SelectFolderContent(
       .testTag(TestTags.LOCAL_BACKUP_RESTORE_SCREEN),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    Spacer(modifier = Modifier.height(40.dp))
+    Spacer(modifier = Modifier.height(32.dp))
 
-    Text(
-      text = stringResource(R.string.LocalBackupRestoreScreen__restore_on_device_backup),
-      style = MaterialTheme.typography.headlineMedium,
-      modifier = Modifier.fillMaxWidth()
-    )
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    Text(
-      text = stringResource(R.string.LocalBackupRestoreScreen__select_folder_description),
-      style = MaterialTheme.typography.bodyMedium,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
-      modifier = Modifier.fillMaxWidth()
-    )
-
-    Spacer(modifier = Modifier.height(28.dp))
-
-    BackupOptionCard(
-      icon = {
-        Icon(
-          painter = painterResource(R.drawable.symbol_folder_24),
-          contentDescription = null,
-          tint = MaterialTheme.colorScheme.primary,
-          modifier = Modifier.size(32.dp)
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { -it / 2 }
+    ) {
+      Column {
+        Box(
+          modifier = Modifier
+            .size(56.dp)
+            .background(
+              MaterialTheme.colorScheme.primaryContainer,
+              RoundedCornerShape(12.dp)
+            ),
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            painter = painterResource(R.drawable.symbol_folder_24),
+            contentDescription = null,
+            modifier = Modifier.size(28.dp),
+            tint = MaterialTheme.colorScheme.onPrimaryContainer
+          )
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+          text = stringResource(R.string.LocalBackupRestoreScreen__restore_on_device_backup),
+          style = MaterialTheme.typography.headlineMedium.copy(
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (-0.5).sp
+          ),
+          modifier = Modifier.fillMaxWidth()
         )
-      },
-      title = stringResource(R.string.LocalBackupRestoreScreen__choose_backup_folder),
-      subtitle = stringResource(R.string.LocalBackupRestoreScreen__choose_folder_subtitle),
-      onClick = { onEvent(LocalBackupRestoreEvents.PickBackupFolder) },
-      modifier = Modifier.testTag(TestTags.LOCAL_BACKUP_RESTORE_SELECT_FOLDER_BUTTON)
-    )
+      }
+    }
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 }
+    ) {
+      Text(
+        text = stringResource(R.string.LocalBackupRestoreScreen__select_folder_description),
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.fillMaxWidth()
+      )
+    }
+
+    Spacer(modifier = Modifier.height(32.dp))
+
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 }
+    ) {
+      BackupOptionCard(
+        icon = {
+          Icon(
+            painter = painterResource(R.drawable.symbol_folder_24),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.size(24.dp)
+          )
+        },
+        title = stringResource(R.string.LocalBackupRestoreScreen__choose_backup_folder),
+        subtitle = stringResource(R.string.LocalBackupRestoreScreen__choose_folder_subtitle),
+        onClick = { onEvent(LocalBackupRestoreEvents.PickBackupFolder) },
+        modifier = Modifier.testTag(TestTags.LOCAL_BACKUP_RESTORE_SELECT_FOLDER_BUTTON)
+      )
+    }
 
     Spacer(modifier = Modifier.weight(1f))
 
-    TextButton(
-      onClick = { onEvent(LocalBackupRestoreEvents.Cancel) },
-      modifier = Modifier.padding(bottom = 32.dp)
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it }
     ) {
-      Text(
-        text = stringResource(android.R.string.cancel),
-        color = MaterialTheme.colorScheme.primary
-      )
+      Buttons.LargeTonal(
+        onClick = { onEvent(LocalBackupRestoreEvents.Cancel) },
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(bottom = 24.dp)
+      ) {
+        Text(
+          text = stringResource(android.R.string.cancel),
+          style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+        )
+      }
     }
   }
 }
 
 @Composable
 private fun ScanningContent(modifier: Modifier = Modifier) {
+  val animationState = remember {
+    MutableTransitionState(false).apply {
+      targetState = true
+    }
+  }
+
   Column(
     modifier = modifier
       .fillMaxSize()
@@ -185,16 +255,27 @@ private fun ScanningContent(modifier: Modifier = Modifier) {
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.Center
   ) {
-    CircularProgressIndicator(
-      modifier = Modifier.size(48.dp)
-    )
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow))
+    ) {
+      CircularProgressIndicator(
+        modifier = Modifier.size(48.dp)
+      )
+    }
 
     Spacer(modifier = Modifier.height(24.dp))
 
-    Text(
-      text = stringResource(R.string.LocalBackupRestoreScreen__scanning_folder),
-      style = MaterialTheme.typography.bodyLarge
-    )
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it }
+    ) {
+      Text(
+        text = stringResource(R.string.LocalBackupRestoreScreen__scanning_folder),
+        style = MaterialTheme.typography.bodyLarge
+      )
+    }
   }
 }
 
@@ -210,6 +291,12 @@ private fun BackupFoundContent(
   val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
   val coroutineScope = rememberCoroutineScope()
   var showBottomSheet by remember { mutableStateOf(false) }
+
+  val animationState = remember {
+    MutableTransitionState(false).apply {
+      targetState = true
+    }
+  }
 
   if (showBottomSheet) {
     BackupPickerBottomSheet(
@@ -240,68 +327,130 @@ private fun BackupFoundContent(
       .testTag(TestTags.LOCAL_BACKUP_RESTORE_SCREEN),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    Spacer(modifier = Modifier.height(40.dp))
+    Spacer(modifier = Modifier.height(32.dp))
 
-    Text(
-      text = stringResource(R.string.LocalBackupRestoreScreen__restore_on_device_backup),
-      style = MaterialTheme.typography.headlineMedium,
-      modifier = Modifier.fillMaxWidth()
-    )
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { -it / 2 }
+    ) {
+      Column {
+        Box(
+          modifier = Modifier
+            .size(56.dp)
+            .background(
+              MaterialTheme.colorScheme.primaryContainer,
+              RoundedCornerShape(12.dp)
+            ),
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            painter = SignalIcons.Backup.painter,
+            contentDescription = null,
+            modifier = Modifier.size(28.dp),
+            tint = MaterialTheme.colorScheme.onPrimaryContainer
+          )
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+          text = stringResource(R.string.LocalBackupRestoreScreen__restore_on_device_backup),
+          style = MaterialTheme.typography.headlineMedium.copy(
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (-0.5).sp
+          ),
+          modifier = Modifier.fillMaxWidth()
+        )
+      }
+    }
 
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(16.dp))
 
-    Text(
-      text = stringResource(R.string.LocalBackupRestoreScreen__backup_found_description),
-      style = MaterialTheme.typography.bodyMedium,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
-      modifier = Modifier.fillMaxWidth()
-    )
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 }
+    ) {
+      Text(
+        text = stringResource(R.string.LocalBackupRestoreScreen__backup_found_description),
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.fillMaxWidth()
+      )
+    }
 
-    Spacer(modifier = Modifier.height(28.dp))
+    Spacer(modifier = Modifier.height(32.dp))
 
-    BackupInfoCard(backupInfo = backupInfo)
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 }
+    ) {
+      BackupInfoCard(backupInfo = backupInfo)
+    }
 
     Spacer(modifier = Modifier.height(16.dp))
 
     if (allBackups.size > 1) {
-      TextButton(
-        onClick = { showBottomSheet = true }
+      AnimatedVisibility(
+        visibleState = animationState,
+        enter = fadeIn(spring(stiffness = Spring.StiffnessLow))
       ) {
-        Icon(
-          painter = SignalIcons.Backup.painter,
-          contentDescription = null,
-          modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-          text = stringResource(R.string.LocalBackupRestoreScreen__choose_earlier_backup)
-        )
+        Buttons.LargeTonal(
+          onClick = { showBottomSheet = true },
+          shape = RoundedCornerShape(16.dp),
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Icon(
+            painter = SignalIcons.Backup.painter,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+          )
+          Spacer(modifier = Modifier.width(8.dp))
+          Text(
+            text = stringResource(R.string.LocalBackupRestoreScreen__choose_earlier_backup),
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+          )
+        }
       }
     }
 
     Spacer(modifier = Modifier.weight(1f))
 
-    Buttons.LargeTonal(
-      onClick = { onEvent(LocalBackupRestoreEvents.RestoreBackup) },
-      modifier = Modifier
-        .fillMaxWidth()
-        .testTag(TestTags.LOCAL_BACKUP_RESTORE_RESTORE_BUTTON)
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it }
     ) {
-      Text(text = stringResource(R.string.LocalBackupRestoreScreen__restore_backup))
-    }
+      Column {
+        Buttons.LargeTonal(
+          onClick = { onEvent(LocalBackupRestoreEvents.RestoreBackup) },
+          modifier = Modifier
+            .fillMaxWidth()
+            .testTag(TestTags.LOCAL_BACKUP_RESTORE_RESTORE_BUTTON)
+        ) {
+          Text(
+            text = stringResource(R.string.LocalBackupRestoreScreen__restore_backup),
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+          )
+        }
 
-    Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-    TextButton(
-      onClick = { onEvent(LocalBackupRestoreEvents.Cancel) },
-      modifier = Modifier.padding(bottom = 32.dp)
-    ) {
-      Text(
-        text = stringResource(android.R.string.cancel),
-        color = MaterialTheme.colorScheme.primary
-      )
+        Buttons.LargeTonal(
+          onClick = { onEvent(LocalBackupRestoreEvents.Cancel) },
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 24.dp)
+        ) {
+          Text(
+            text = stringResource(android.R.string.cancel),
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+          )
+        }
+      }
     }
   }
+
 }
 
 @Composable
@@ -317,40 +466,50 @@ private fun BackupInfoCard(
     backupInfo.sizeBytes?.let { Formatter.formatShortFileSize(context, it) }
   }
 
-  Card(
-    colors = CardDefaults.cardColors(
-      containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+  ElevatedCard(
+    colors = CardDefaults.elevatedCardColors(
+      containerColor = MaterialTheme.colorScheme.surface
     ),
+    shape = RoundedCornerShape(28.dp),
     modifier = modifier
       .fillMaxWidth()
       .testTag(TestTags.LOCAL_BACKUP_RESTORE_BACKUP_INFO_CARD)
   ) {
     Column(
-      modifier = Modifier.padding(16.dp)
+      modifier = Modifier.padding(24.dp)
     ) {
       Text(
         text = stringResource(R.string.LocalBackupRestoreScreen__your_latest_backup),
-        style = MaterialTheme.typography.bodyLarge
+        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+        color = MaterialTheme.colorScheme.primary
       )
 
-      Spacer(modifier = Modifier.height(12.dp))
+      Spacer(modifier = Modifier.height(16.dp))
 
       Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-          painter = SignalIcons.Recent.painter,
-          contentDescription = null,
-          tint = MaterialTheme.colorScheme.primary,
-          modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
+        Box(
+          modifier = Modifier
+            .size(40.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer),
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            painter = SignalIcons.Recent.painter,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp)
+          )
+        }
+        Spacer(modifier = Modifier.width(16.dp))
         Text(
           text = formattedDate,
-          style = MaterialTheme.typography.bodyMedium
+          style = MaterialTheme.typography.bodyLarge
         )
       }
 
       if (formattedSize != null) {
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         val sizeIcon = if (backupInfo.type == LocalBackupInfo.BackupType.V1) {
           SignalIcons.File.painter
@@ -359,16 +518,24 @@ private fun BackupInfoCard(
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-          Icon(
-            painter = sizeIcon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp)
-          )
-          Spacer(modifier = Modifier.width(12.dp))
+          Box(
+            modifier = Modifier
+              .size(40.dp)
+              .clip(RoundedCornerShape(12.dp))
+              .background(MaterialTheme.colorScheme.secondaryContainer),
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(
+              painter = sizeIcon,
+              contentDescription = null,
+              tint = MaterialTheme.colorScheme.secondary,
+              modifier = Modifier.size(20.dp)
+            )
+          }
+          Spacer(modifier = Modifier.width(16.dp))
           Text(
             text = formattedSize,
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyLarge
           )
         }
       }
@@ -417,30 +584,33 @@ private fun BackupPickerSheetContent(
   ) {
     Text(
       text = stringResource(R.string.LocalBackupRestoreScreen__choose_a_backup_to_restore),
-      style = MaterialTheme.typography.headlineSmall,
+      style = MaterialTheme.typography.headlineSmall.copy(
+        fontWeight = FontWeight.Bold,
+        letterSpacing = (-0.5).sp
+      ),
       textAlign = TextAlign.Center
     )
 
-    Spacer(modifier = Modifier.height(8.dp))
+    Spacer(modifier = Modifier.height(12.dp))
 
     Text(
       text = stringResource(R.string.LocalBackupRestoreScreen__choosing_an_older_backup_warning),
-      style = MaterialTheme.typography.bodyMedium,
+      style = MaterialTheme.typography.bodyLarge,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
       textAlign = TextAlign.Center
     )
 
     Spacer(modifier = Modifier.height(24.dp))
 
-    Card(
-      colors = CardDefaults.cardColors(
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+    ElevatedCard(
+      colors = CardDefaults.elevatedCardColors(
+        containerColor = MaterialTheme.colorScheme.surface
       ),
+      shape = RoundedCornerShape(28.dp),
       modifier = Modifier.fillMaxWidth()
     ) {
       Column(
-        modifier = Modifier.padding(vertical = 4.dp)
-          .background(MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(18.dp))
+        modifier = Modifier.padding(vertical = 8.dp)
       ) {
         allBackups.forEach { backup ->
           val isSelected = backup == selected
@@ -456,19 +626,19 @@ private fun BackupPickerSheetContent(
             modifier = Modifier
               .fillMaxWidth()
               .clickable { onSelect(backup) }
-              .padding(horizontal = 16.dp, vertical = 12.dp)
+              .padding(horizontal = 24.dp, vertical = 16.dp)
           ) {
             RadioButton(
               selected = isSelected,
               onClick = { onSelect(backup) }
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
             Column {
               Text(
                 text = formattedDate,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
               )
               if (formattedSize != null) {
                 Text(
@@ -483,11 +653,11 @@ private fun BackupPickerSheetContent(
       }
     }
 
-    Spacer(modifier = Modifier.height(24.dp))
+    Spacer(modifier = Modifier.height(32.dp))
 
     Buttons.LargeTonal(
       onClick = onConfirm,
-      modifier = Modifier.defaultMinSize(220.dp)
+      modifier = Modifier.fillMaxWidth()
     ) {
       Text(text = stringResource(R.string.LocalBackupRestoreScreen__continue_button))
     }
@@ -502,6 +672,11 @@ private fun NoBackupFoundContent(
   modifier: Modifier = Modifier
 ) {
   val scrollState = rememberScrollState()
+  val animationState = remember {
+    MutableTransitionState(false).apply {
+      targetState = true
+    }
+  }
 
   Column(
     modifier = modifier
@@ -511,40 +686,96 @@ private fun NoBackupFoundContent(
       .testTag(TestTags.LOCAL_BACKUP_RESTORE_SCREEN),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    Spacer(modifier = Modifier.height(40.dp))
-
-    Text(
-      text = stringResource(R.string.LocalBackupRestoreScreen__no_backup_found),
-      style = MaterialTheme.typography.headlineMedium,
-      modifier = Modifier.fillMaxWidth()
-    )
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    Text(
-      text = stringResource(R.string.LocalBackupRestoreScreen__no_backup_found_description),
-      style = MaterialTheme.typography.bodyMedium,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
-      modifier = Modifier.fillMaxWidth()
-    )
-
     Spacer(modifier = Modifier.height(32.dp))
 
-    OutlinedButton(
-      onClick = { onEvent(LocalBackupRestoreEvents.PickBackupFolder) },
-      modifier = Modifier.fillMaxWidth()
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { -it / 2 }
     ) {
-      Text(text = stringResource(R.string.LocalBackupRestoreScreen__try_different_folder))
+      Column {
+        Box(
+          modifier = Modifier
+            .size(56.dp)
+            .background(
+              MaterialTheme.colorScheme.errorContainer,
+              RoundedCornerShape(12.dp)
+            ),
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            imageVector = SignalIcons.X.imageVector,
+            contentDescription = null,
+            modifier = Modifier.size(28.dp),
+            tint = MaterialTheme.colorScheme.onErrorContainer
+          )
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+          text = stringResource(R.string.LocalBackupRestoreScreen__no_backup_found),
+          style = MaterialTheme.typography.headlineMedium.copy(
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (-0.5).sp
+          ),
+          modifier = Modifier.fillMaxWidth()
+        )
+      }
     }
 
     Spacer(modifier = Modifier.height(16.dp))
 
-    TextButton(
-      onClick = { onEvent(LocalBackupRestoreEvents.Cancel) }
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 }
     ) {
-      Text(text = stringResource(android.R.string.cancel))
+      Text(
+        text = stringResource(R.string.LocalBackupRestoreScreen__no_backup_found_description),
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.fillMaxWidth()
+      )
+    }
+
+    Spacer(modifier = Modifier.height(32.dp))
+
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 }
+    ) {
+      Buttons.LargeTonal(
+        onClick = { onEvent(LocalBackupRestoreEvents.PickBackupFolder) },
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Text(
+          text = stringResource(R.string.LocalBackupRestoreScreen__try_different_folder),
+          style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+        )
+      }
+    }
+
+    Spacer(modifier = Modifier.weight(1f))
+
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it }
+    ) {
+      Buttons.LargeTonal(
+        onClick = { onEvent(LocalBackupRestoreEvents.Cancel) },
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(bottom = 24.dp)
+      ) {
+        Text(
+          text = stringResource(android.R.string.cancel),
+          style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+        )
+      }
     }
   }
+
 }
 
 @Composable
@@ -555,26 +786,34 @@ private fun BackupOptionCard(
   onClick: () -> Unit,
   modifier: Modifier = Modifier
 ) {
-  Card(
-    colors = CardDefaults.cardColors(
-      containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-    ),
-    modifier = modifier
-      .fillMaxWidth()
-      .clickable(onClick = onClick)
+  ElevatedCard(
+    onClick = onClick,
+    modifier = modifier.fillMaxWidth(),
+    shape = RoundedCornerShape(28.dp),
+    colors = CardDefaults.elevatedCardColors(
+      containerColor = MaterialTheme.colorScheme.surface
+    )
   ) {
     Row(
       verticalAlignment = Alignment.CenterVertically,
-      modifier = Modifier.padding(16.dp)
+      modifier = Modifier.padding(24.dp)
     ) {
-      icon()
+      Box(
+        modifier = Modifier
+          .size(48.dp)
+          .clip(RoundedCornerShape(12.dp))
+          .background(MaterialTheme.colorScheme.primaryContainer),
+        contentAlignment = Alignment.Center
+      ) {
+        icon()
+      }
 
-      Spacer(modifier = Modifier.width(16.dp))
+      Spacer(modifier = Modifier.width(20.dp))
 
-      Column {
+      Column(modifier = Modifier.weight(1f)) {
         Text(
           text = title,
-          style = MaterialTheme.typography.bodyLarge
+          style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
         )
         Text(
           text = subtitle,
@@ -582,12 +821,24 @@ private fun BackupOptionCard(
           color = MaterialTheme.colorScheme.onSurfaceVariant
         )
       }
+
+      Icon(
+        imageVector = SignalIcons.ChevronRight.imageVector,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant
+      )
     }
   }
 }
 
 @Composable
 private fun PreparingContent(modifier: Modifier = Modifier) {
+  val animationState = remember {
+    MutableTransitionState(false).apply {
+      targetState = true
+    }
+  }
+
   Column(
     modifier = modifier
       .fillMaxSize()
@@ -596,16 +847,27 @@ private fun PreparingContent(modifier: Modifier = Modifier) {
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.Center
   ) {
-    CircularProgressIndicator(
-      modifier = Modifier.size(48.dp)
-    )
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow))
+    ) {
+      CircularProgressIndicator(
+        modifier = Modifier.size(48.dp)
+      )
+    }
 
     Spacer(modifier = Modifier.height(24.dp))
 
-    Text(
-      text = stringResource(R.string.LocalBackupRestoreScreen__preparing_restore),
-      style = MaterialTheme.typography.bodyLarge
-    )
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it }
+    ) {
+      Text(
+        text = stringResource(R.string.LocalBackupRestoreScreen__preparing_restore),
+        style = MaterialTheme.typography.bodyLarge
+      )
+    }
   }
 }
 
@@ -615,6 +877,12 @@ private fun InProgressContent(
   onEvent: (LocalBackupRestoreEvents) -> Unit,
   modifier: Modifier = Modifier
 ) {
+  val animationState = remember {
+    MutableTransitionState(false).apply {
+      targetState = true
+    }
+  }
+
   Column(
     modifier = modifier
       .fillMaxSize()
@@ -623,44 +891,76 @@ private fun InProgressContent(
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.Center
   ) {
-    Text(
-      text = stringResource(R.string.LocalBackupRestoreScreen__restoring_backup),
-      style = MaterialTheme.typography.headlineMedium,
-      textAlign = TextAlign.Center
-    )
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    Text(
-      text = stringResource(R.string.LocalBackupRestoreScreen__restoring_description),
-      style = MaterialTheme.typography.bodyMedium,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
-      textAlign = TextAlign.Center
-    )
-
-    Spacer(modifier = Modifier.height(32.dp))
-
-    LinearProgressIndicator(
-      progress = { progressFraction },
-      modifier = Modifier
-        .fillMaxWidth()
-        .testTag(TestTags.LOCAL_BACKUP_RESTORE_PROGRESS_BAR)
-    )
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    Text(
-      text = "${(progressFraction * 100).toInt()}%",
-      style = MaterialTheme.typography.bodyMedium,
-      color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-
-    Spacer(modifier = Modifier.height(32.dp))
-
-    TextButton(
-      onClick = { onEvent(LocalBackupRestoreEvents.Cancel) }
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 }
     ) {
-      Text(text = stringResource(android.R.string.cancel))
+      Text(
+        text = stringResource(R.string.LocalBackupRestoreScreen__restoring_backup),
+        style = MaterialTheme.typography.headlineMedium.copy(
+          fontWeight = FontWeight.Bold,
+          letterSpacing = (-0.5).sp
+        ),
+        textAlign = TextAlign.Center
+      )
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it }
+    ) {
+      Text(
+        text = stringResource(R.string.LocalBackupRestoreScreen__restoring_description),
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center
+      )
+    }
+
+    Spacer(modifier = Modifier.height(48.dp))
+
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow))
+    ) {
+      Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        LinearProgressIndicator(
+          progress = { progressFraction },
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(12.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .testTag(TestTags.LOCAL_BACKUP_RESTORE_PROGRESS_BAR)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+          text = "${(progressFraction * 100).toInt()}%",
+          style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+          color = MaterialTheme.colorScheme.primary
+        )
+      }
+    }
+
+    Spacer(modifier = Modifier.height(48.dp))
+
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow))
+    ) {
+      TextButton(
+        onClick = { onEvent(LocalBackupRestoreEvents.Cancel) }
+      ) {
+        Text(
+          text = stringResource(android.R.string.cancel),
+          style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+        )
+      }
     }
   }
 }
@@ -671,6 +971,12 @@ private fun ErrorContent(
   onEvent: (LocalBackupRestoreEvents) -> Unit,
   modifier: Modifier = Modifier
 ) {
+  val animationState = remember {
+    MutableTransitionState(false).apply {
+      targetState = true
+    }
+  }
+
   Column(
     modifier = modifier
       .fillMaxSize()
@@ -679,39 +985,91 @@ private fun ErrorContent(
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.Center
   ) {
-    Text(
-      text = stringResource(R.string.LocalBackupRestoreScreen__restore_failed),
-      style = MaterialTheme.typography.headlineMedium,
-      color = MaterialTheme.colorScheme.error,
-      textAlign = TextAlign.Center
-    )
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    Text(
-      text = errorMessage ?: stringResource(R.string.LocalBackupRestoreScreen__restore_failed_description),
-      style = MaterialTheme.typography.bodyMedium,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
-      textAlign = TextAlign.Center
-    )
-
-    Spacer(modifier = Modifier.height(32.dp))
-
-    OutlinedButton(
-      onClick = { onEvent(LocalBackupRestoreEvents.PickBackupFolder) },
-      modifier = Modifier.fillMaxWidth()
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { -it / 2 }
     ) {
-      Text(text = stringResource(R.string.LocalBackupRestoreScreen__try_again))
+      Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+          modifier = Modifier
+            .size(56.dp)
+            .background(
+              MaterialTheme.colorScheme.errorContainer,
+              RoundedCornerShape(12.dp)
+            ),
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            imageVector = SignalIcons.X.imageVector,
+            contentDescription = null,
+            modifier = Modifier.size(28.dp),
+            tint = MaterialTheme.colorScheme.onErrorContainer
+          )
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+          text = stringResource(R.string.LocalBackupRestoreScreen__restore_failed),
+          style = MaterialTheme.typography.headlineMedium.copy(
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (-0.5).sp
+          ),
+          color = MaterialTheme.colorScheme.error,
+          textAlign = TextAlign.Center
+        )
+      }
     }
 
     Spacer(modifier = Modifier.height(16.dp))
 
-    TextButton(
-      onClick = { onEvent(LocalBackupRestoreEvents.Cancel) }
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 }
     ) {
-      Text(text = stringResource(android.R.string.cancel))
+      Text(
+        text = errorMessage ?: stringResource(R.string.LocalBackupRestoreScreen__restore_failed_description),
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center
+      )
+    }
+
+    Spacer(modifier = Modifier.height(48.dp))
+
+    AnimatedVisibility(
+      visibleState = animationState,
+      enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+        slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it }
+    ) {
+      Column {
+        Buttons.LargeTonal(
+          onClick = { onEvent(LocalBackupRestoreEvents.PickBackupFolder) },
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Text(
+            text = stringResource(R.string.LocalBackupRestoreScreen__try_again),
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+          )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Buttons.LargeTonal(
+          onClick = { onEvent(LocalBackupRestoreEvents.Cancel) },
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 24.dp)
+        ) {
+          Text(
+            text = stringResource(android.R.string.cancel),
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+          )
+        }
+      }
     }
   }
+
 }
 
 @AllDevicePreviews

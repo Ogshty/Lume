@@ -7,9 +7,13 @@ package org.signal.core.ui.navigation
 
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
@@ -23,6 +27,43 @@ import androidx.navigationevent.NavigationEvent
  * A collection of [TransitionSpecs] for setting up nav3 navigation.
  */
 object TransitionSpecs {
+
+  /**
+   * Expressive "Fluid" transitions using spring physics and scale.
+   */
+  object Expressive {
+    private const val FADE_DURATION = 400
+
+    val transitionSpec: AnimatedContentTransitionScope<Scene<NavKey>>.() -> ContentTransform = {
+      (
+        slideInHorizontally(
+          initialOffsetX = { it / 3 },
+          animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy)
+        ) + fadeIn(animationSpec = tween(FADE_DURATION)) + scaleIn(initialScale = 0.92f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow))
+        ) togetherWith
+        (
+          slideOutHorizontally(
+            targetOffsetX = { -it / 3 },
+            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy)
+          ) + fadeOut(animationSpec = tween(FADE_DURATION)) + scaleOut(targetScale = 0.92f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow))
+          )
+    }
+
+    val popTransitionSpec: AnimatedContentTransitionScope<Scene<NavKey>>.() -> ContentTransform = {
+      (
+        slideInHorizontally(
+          initialOffsetX = { -it / 3 },
+          animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy)
+        ) + fadeIn(animationSpec = tween(FADE_DURATION)) + scaleIn(initialScale = 0.92f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow))
+        ) togetherWith
+        (
+          slideOutHorizontally(
+            targetOffsetX = { it / 3 },
+            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy)
+          ) + fadeOut(animationSpec = tween(FADE_DURATION)) + scaleOut(targetScale = 0.92f, animationSpec = spring(stiffness = Spring.StiffnessMediumLow))
+          )
+    }
+  }
 
   /**
    * Screens slide in from the right and slide out from the left.

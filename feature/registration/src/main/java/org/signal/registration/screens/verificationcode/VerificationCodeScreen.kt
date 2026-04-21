@@ -5,6 +5,14 @@
 
 package org.signal.registration.screens.verificationcode
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +26,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,8 +46,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -46,9 +57,11 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import org.signal.core.ui.compose.AllDevicePreviews
 import org.signal.core.ui.compose.Previews
@@ -143,6 +156,10 @@ fun VerificationCodeScreen(
     focusRequesters[0].requestFocus()
   }
 
+  val headerAnimationState = remember { MutableTransitionState(false).apply { targetState = true } }
+  val contentAnimationState = remember { MutableTransitionState(false).apply { targetState = true } }
+  val footerAnimationState = remember { MutableTransitionState(false).apply { targetState = true } }
+
   Scaffold(
     snackbarHost = { SnackbarHost(snackbarHostState) },
     modifier = modifier
@@ -155,145 +172,158 @@ fun VerificationCodeScreen(
         .padding(horizontal = 24.dp),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      Spacer(modifier = Modifier.height(40.dp))
+      Spacer(modifier = Modifier.height(64.dp))
 
       // Header
-      Text(
-        text = stringResource(R.string.VerificationCodeScreen__verification_code),
-        style = MaterialTheme.typography.headlineMedium,
-        modifier = Modifier
-          .fillMaxWidth()
-          .wrapContentWidth(Alignment.Start)
-      )
-
-      Spacer(modifier = Modifier.height(16.dp))
-
-      // Subheader with phone number
-      Text(
-        text = stringResource(R.string.VerificationCodeScreen__enter_the_code_we_sent_to_s, state.e164),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier
-          .fillMaxWidth()
-          .wrapContentWidth(Alignment.Start)
-      )
-
-      Spacer(modifier = Modifier.height(8.dp))
-
-      // Wrong number button - aligned to start like in XML
-      TextButton(
-        onClick = { onEvent(VerificationCodeScreenEvents.WrongNumber) },
-        modifier = Modifier
-          .fillMaxWidth()
-          .wrapContentWidth(Alignment.Start)
-          .testTag(TestTags.VERIFICATION_CODE_WRONG_NUMBER_BUTTON)
+      AnimatedVisibility(
+        visibleState = headerAnimationState,
+        enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+          slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 }
       ) {
-        Text(
-          text = stringResource(R.string.VerificationCodeScreen__wrong_number),
-          color = MaterialTheme.colorScheme.primary
-        )
+        Column {
+          Text(
+            text = stringResource(R.string.VerificationCodeScreen__verification_code),
+            style = MaterialTheme.typography.headlineMedium.copy(
+              fontWeight = FontWeight.Bold,
+              letterSpacing = (-0.5).sp
+            ),
+            modifier = Modifier.fillMaxWidth()
+          )
+
+          Spacer(modifier = Modifier.height(12.dp))
+
+          // Subheader with phone number
+          Text(
+            text = stringResource(R.string.VerificationCodeScreen__enter_the_code_we_sent_to_s, state.e164),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth()
+          )
+
+          Spacer(modifier = Modifier.height(8.dp))
+
+          // Wrong number button
+          TextButton(
+            onClick = { onEvent(VerificationCodeScreenEvents.WrongNumber) },
+            modifier = Modifier
+              .testTag(TestTags.VERIFICATION_CODE_WRONG_NUMBER_BUTTON)
+          ) {
+            Text(
+              text = stringResource(R.string.VerificationCodeScreen__wrong_number),
+              color = MaterialTheme.colorScheme.primary,
+              style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+            )
+          }
+        }
       }
 
-      Spacer(modifier = Modifier.height(32.dp))
+      Spacer(modifier = Modifier.height(48.dp))
 
       // Code input with spinner overlay when submitting
-      Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
+      AnimatedVisibility(
+        visibleState = contentAnimationState,
+        enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+          slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 4 }
       ) {
-        // Code input fields - XXX-XXX format
-        Row(
-          modifier = Modifier
-            .fillMaxWidth()
-            .testTag(TestTags.VERIFICATION_CODE_INPUT),
-          horizontalArrangement = Arrangement.Center,
-          verticalAlignment = Alignment.CenterVertically
+        Box(
+          modifier = Modifier.fillMaxWidth(),
+          contentAlignment = Alignment.Center
         ) {
-          // First three digits
-          for (i in 0..2) {
-            DigitField(
-              value = digits[i],
-              onValueChange = { newValue, isBackspace ->
-                handleDigitChange(
-                  index = i,
-                  newValue = newValue,
-                  isBackspace = isBackspace,
-                  digits = digits,
-                  focusRequesters = focusRequesters,
-                  onDigitsChanged = { digits = it }
-                )
-              },
-              focusRequester = focusRequesters[i],
-              testTag = when (i) {
-                0 -> TestTags.VERIFICATION_CODE_DIGIT_0
-                1 -> TestTags.VERIFICATION_CODE_DIGIT_1
-                else -> TestTags.VERIFICATION_CODE_DIGIT_2
-              },
-              enabled = !state.isSubmittingCode
+          // Code input fields - XXX-XXX format
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .testTag(TestTags.VERIFICATION_CODE_INPUT),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            // First three digits
+            for (i in 0..2) {
+              DigitField(
+                value = digits[i],
+                onValueChange = { newValue, isBackspace ->
+                  handleDigitChange(
+                    index = i,
+                    newValue = newValue,
+                    isBackspace = isBackspace,
+                    digits = digits,
+                    focusRequesters = focusRequesters,
+                    onDigitsChanged = { digits = it }
+                  )
+                },
+                focusRequester = focusRequesters[i],
+                testTag = when (i) {
+                  0 -> TestTags.VERIFICATION_CODE_DIGIT_0
+                  1 -> TestTags.VERIFICATION_CODE_DIGIT_1
+                  else -> TestTags.VERIFICATION_CODE_DIGIT_2
+                },
+                enabled = !state.isSubmittingCode
+              )
+              if (i < 2) {
+                Spacer(modifier = Modifier.width(6.dp))
+              }
+            }
+
+            // Separator
+            Text(
+              text = "—",
+              style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Light),
+              modifier = Modifier.padding(horizontal = 8.dp),
+              color = if (state.isSubmittingCode) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (i < 2) {
-              Spacer(modifier = Modifier.width(4.dp))
+
+            // Last three digits
+            for (i in 3..5) {
+              if (i > 3) {
+                Spacer(modifier = Modifier.width(6.dp))
+              }
+              DigitField(
+                value = digits[i],
+                onValueChange = { newValue, isBackspace ->
+                  handleDigitChange(
+                    index = i,
+                    newValue = newValue,
+                    isBackspace = isBackspace,
+                    digits = digits,
+                    focusRequesters = focusRequesters,
+                    onDigitsChanged = { digits = it }
+                  )
+                },
+                focusRequester = focusRequesters[i],
+                testTag = when (i) {
+                  3 -> TestTags.VERIFICATION_CODE_DIGIT_3
+                  4 -> TestTags.VERIFICATION_CODE_DIGIT_4
+                  else -> TestTags.VERIFICATION_CODE_DIGIT_5
+                },
+                enabled = !state.isSubmittingCode
+              )
             }
           }
 
-          // Separator
-          Text(
-            text = "-",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(horizontal = 8.dp),
-            color = if (state.isSubmittingCode) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f) else MaterialTheme.colorScheme.onSurface
-          )
-
-          // Last three digits
-          for (i in 3..5) {
-            if (i > 3) {
-              Spacer(modifier = Modifier.width(4.dp))
-            }
-            DigitField(
-              value = digits[i],
-              onValueChange = { newValue, isBackspace ->
-                handleDigitChange(
-                  index = i,
-                  newValue = newValue,
-                  isBackspace = isBackspace,
-                  digits = digits,
-                  focusRequesters = focusRequesters,
-                  onDigitsChanged = { digits = it }
-                )
-              },
-              focusRequester = focusRequesters[i],
-              testTag = when (i) {
-                3 -> TestTags.VERIFICATION_CODE_DIGIT_3
-                4 -> TestTags.VERIFICATION_CODE_DIGIT_4
-                else -> TestTags.VERIFICATION_CODE_DIGIT_5
-              },
-              enabled = !state.isSubmittingCode
+          // Loading spinner overlay
+          if (state.isSubmittingCode) {
+            CircularProgressIndicator(
+              modifier = Modifier.size(48.dp),
+              color = MaterialTheme.colorScheme.primary
             )
           }
-        }
-
-        // Loading spinner overlay
-        if (state.isSubmittingCode) {
-          CircularProgressIndicator(
-            modifier = Modifier.size(48.dp)
-          )
         }
       }
 
       Spacer(modifier = Modifier.height(32.dp))
 
-      // Having trouble button - shown after 3 incorrect code attempts (matching old behavior)
+      // Having trouble button
       if (state.shouldShowHavingTrouble()) {
         TextButton(
           onClick = { onEvent(VerificationCodeScreenEvents.HavingTrouble) },
           modifier = Modifier
             .fillMaxWidth()
-            .wrapContentWidth(Alignment.CenterHorizontally)
             .testTag(TestTags.VERIFICATION_CODE_HAVING_TROUBLE_BUTTON)
         ) {
           Text(
             text = stringResource(R.string.VerificationCodeScreen__having_trouble),
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary,
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
           )
         }
       }
@@ -301,61 +331,77 @@ fun VerificationCodeScreen(
       Spacer(modifier = Modifier.weight(1f))
 
       // Bottom buttons - Resend SMS and Call Me side by side
-      Row(
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(bottom = 32.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Bottom
+      AnimatedVisibility(
+        visibleState = footerAnimationState,
+        enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+          slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 }
       ) {
-        // Resend SMS button with countdown — fits on one line if space allows, wraps if not
-        val canResendSms = state.canResendSms()
-        val disabledColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        TextButton(
-          onClick = { onEvent(VerificationCodeScreenEvents.ResendSms) },
-          enabled = canResendSms,
+        Row(
           modifier = Modifier
-            .weight(1f)
-            .testTag(TestTags.VERIFICATION_CODE_RESEND_SMS_BUTTON)
+            .fillMaxWidth()
+            .padding(bottom = 32.dp),
+          horizontalArrangement = Arrangement.spacedBy(12.dp),
+          verticalAlignment = Alignment.Bottom
         ) {
-          Text(
-            text = if (canResendSms) {
-              stringResource(R.string.VerificationCodeScreen__resend_code)
-            } else {
-              val totalSeconds = state.rateLimits.smsResendTimeRemaining.inWholeSeconds.toInt()
-              val minutes = totalSeconds / 60
-              val seconds = totalSeconds % 60
-              stringResource(R.string.VerificationCodeScreen__resend_code) + " " +
-                stringResource(R.string.VerificationCodeScreen__countdown_format, minutes, seconds)
-            },
-            color = if (canResendSms) MaterialTheme.colorScheme.primary else disabledColor,
-            textAlign = TextAlign.Center
-          )
-        }
+          val canResendSms = state.canResendSms()
+          val disabledColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+          TextButton(
+            onClick = { onEvent(VerificationCodeScreenEvents.ResendSms) },
+            enabled = canResendSms,
+            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier
+              .weight(1f)
+              .height(56.dp)
+              .background(
+                if (canResendSms) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else Color.Transparent,
+                RoundedCornerShape(28.dp)
+              )
+              .testTag(TestTags.VERIFICATION_CODE_RESEND_SMS_BUTTON)
+          ) {
+            Text(
+              text = if (canResendSms) {
+                stringResource(R.string.VerificationCodeScreen__resend_code)
+              } else {
+                val totalSeconds = state.rateLimits.smsResendTimeRemaining.inWholeSeconds.toInt()
+                val minutes = totalSeconds / 60
+                val seconds = totalSeconds % 60
+                stringResource(R.string.VerificationCodeScreen__resend_code) + "\n" +
+                  stringResource(R.string.VerificationCodeScreen__countdown_format, minutes, seconds)
+              },
+              color = if (canResendSms) MaterialTheme.colorScheme.onPrimaryContainer else disabledColor,
+              textAlign = TextAlign.Center,
+              style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+            )
+          }
 
-        Spacer(modifier = Modifier.width(8.dp))
-
-        // Call Me button with inline countdown
-        val canRequestCall = state.canRequestCall()
-        TextButton(
-          onClick = { onEvent(VerificationCodeScreenEvents.CallMe) },
-          enabled = canRequestCall,
-          modifier = Modifier
-            .weight(1f)
-            .testTag(TestTags.VERIFICATION_CODE_CALL_ME_BUTTON)
-        ) {
-          Text(
-            text = if (canRequestCall) {
-              stringResource(R.string.VerificationCodeScreen__call_me_instead)
-            } else {
-              val totalSeconds = state.rateLimits.callRequestTimeRemaining.inWholeSeconds.toInt()
-              val minutes = totalSeconds / 60
-              val seconds = totalSeconds % 60
-              stringResource(R.string.VerificationCodeScreen__call_me_available_in, minutes, seconds)
-            },
-            color = if (canRequestCall) MaterialTheme.colorScheme.primary else disabledColor,
-            textAlign = TextAlign.Center
-          )
+          val canRequestCall = state.canRequestCall()
+          TextButton(
+            onClick = { onEvent(VerificationCodeScreenEvents.CallMe) },
+            enabled = canRequestCall,
+            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier
+              .weight(1f)
+              .height(56.dp)
+              .background(
+                if (canRequestCall) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else Color.Transparent,
+                RoundedCornerShape(28.dp)
+              )
+              .testTag(TestTags.VERIFICATION_CODE_CALL_ME_BUTTON)
+          ) {
+            Text(
+              text = if (canRequestCall) {
+                stringResource(R.string.VerificationCodeScreen__call_me_instead)
+              } else {
+                val totalSeconds = state.rateLimits.callRequestTimeRemaining.inWholeSeconds.toInt()
+                val minutes = totalSeconds / 60
+                val seconds = totalSeconds % 60
+                stringResource(R.string.VerificationCodeScreen__call_me_available_in, minutes, seconds)
+              },
+              color = if (canRequestCall) MaterialTheme.colorScheme.onPrimaryContainer else disabledColor,
+              textAlign = TextAlign.Center,
+              style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
+            )
+          }
         }
       }
     }
@@ -407,16 +453,15 @@ private fun DigitField(
   OutlinedTextField(
     value = value,
     onValueChange = { newValue ->
-      // Determine if this is a backspace (new value is empty and old value was not)
       val isBackspace = newValue.isEmpty() && value.isNotEmpty()
       onValueChange(newValue, isBackspace)
     },
     modifier = modifier
-      .width(48.dp)
+      .width(52.dp)
+      .height(64.dp)
       .focusRequester(focusRequester)
       .testTag(testTag)
       .onKeyEvent { keyEvent ->
-        // Handle hardware backspace key when field is empty
         if (keyEvent.type == KeyEventType.KeyUp &&
           (keyEvent.key == Key.Backspace || keyEvent.key == Key.Delete) &&
           value.isEmpty()
@@ -427,13 +472,21 @@ private fun DigitField(
           false
         }
       },
-    textStyle = MaterialTheme.typography.titleLarge.copy(textAlign = TextAlign.Center),
+    textStyle = MaterialTheme.typography.headlineSmall.copy(
+      textAlign = TextAlign.Center,
+      fontWeight = FontWeight.Bold
+    ),
     singleLine = true,
+    shape = RoundedCornerShape(28.dp),
     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
     enabled = enabled,
     colors = OutlinedTextFieldDefaults.colors(
+      unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+      focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+      unfocusedBorderColor = Color.Transparent,
+      focusedBorderColor = Color.Transparent,
       disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-      disabledBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+      disabledBorderColor = Color.Transparent
     )
   )
 }

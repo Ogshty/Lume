@@ -7,6 +7,13 @@
 
 package org.signal.registration.screens.welcome
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,6 +33,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,15 +51,19 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CoroutineScope
 import org.signal.core.ui.WindowBreakpoint
 import org.signal.core.ui.compose.AllDevicePreviews
@@ -81,12 +94,19 @@ fun WelcomeScreen(
   val onRestoreOrTransferClick = { showBottomSheet = true }
   val onTermsAndPrivacyClick: () -> Unit = {}
 
+  val animationState = remember {
+    MutableTransitionState(false).apply {
+      targetState = true
+    }
+  }
+
   when (windowBreakpoint) {
     WindowBreakpoint.SMALL -> {
       CompactLayout(
         onEvent = onEvent,
         onRestoreOrTransferClick = onRestoreOrTransferClick,
         onTermsAndPrivacyClick = onTermsAndPrivacyClick,
+        animationState = animationState,
         modifier = modifier
       )
     }
@@ -96,6 +116,7 @@ fun WelcomeScreen(
         onEvent = onEvent,
         onRestoreOrTransferClick = onRestoreOrTransferClick,
         onTermsAndPrivacyClick = onTermsAndPrivacyClick,
+        animationState = animationState,
         modifier = modifier
       )
     }
@@ -105,6 +126,7 @@ fun WelcomeScreen(
         onEvent = onEvent,
         onTermsAndPrivacyClick = onTermsAndPrivacyClick,
         onRestoreOrTransferClick = onRestoreOrTransferClick,
+        animationState = animationState,
         modifier = modifier
       )
     }
@@ -126,6 +148,7 @@ private fun CompactLayout(
   onEvent: (WelcomeScreenEvents) -> Unit,
   onTermsAndPrivacyClick: () -> Unit,
   onRestoreOrTransferClick: () -> Unit,
+  animationState: MutableTransitionState<Boolean>,
   modifier: Modifier = Modifier
 ) {
   RegistrationScreen(
@@ -137,42 +160,60 @@ private fun CompactLayout(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        HeroImage(
-          modifier = Modifier
-            .weight(1f)
-            .fillMaxWidth()
-            .padding(16.dp)
-        )
+        AnimatedVisibility(
+          visibleState = animationState,
+          enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+            slideInVertically(spring(stiffness = Spring.StiffnessLow)) { -it / 2 }
+        ) {
+          HeroImage(
+            modifier = Modifier
+              .weight(1f)
+              .fillMaxWidth()
+              .padding(16.dp)
+          )
+        }
 
-        Headline(
-          textAlign = TextAlign.Center,
-          modifier = Modifier.padding(horizontal = 32.dp)
-        )
+        AnimatedVisibility(
+          visibleState = animationState,
+          enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+            slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 }
+        ) {
+          Headline(
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 32.dp)
+          )
+        }
 
         Spacer(modifier = Modifier.height(40.dp))
       }
     },
     footer = {
-      Box(
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(horizontal = 24.dp),
-        contentAlignment = Alignment.Center
+      AnimatedVisibility(
+        visibleState = animationState,
+        enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+          slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it }
       ) {
-        Column(
-          modifier = Modifier.widthIn(max = 320.dp),
-          horizontalAlignment = Alignment.CenterHorizontally
+        Box(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+          contentAlignment = Alignment.Center
         ) {
-          TermsAndPrivacy(onTermsAndPrivacyClick = onTermsAndPrivacyClick)
+          Column(
+            modifier = Modifier.widthIn(max = 320.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+          ) {
+            TermsAndPrivacy(onTermsAndPrivacyClick = onTermsAndPrivacyClick)
 
-          Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-          PrimaryDeviceCallToActionButtons(
-            onEvent = onEvent,
-            onRestoreOrTransferClick = onRestoreOrTransferClick
-          )
+            PrimaryDeviceCallToActionButtons(
+              onEvent = onEvent,
+              onRestoreOrTransferClick = onRestoreOrTransferClick
+            )
 
-          Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(48.dp))
+          }
         }
       }
     }
@@ -184,6 +225,7 @@ private fun MediumLayout(
   onEvent: (WelcomeScreenEvents) -> Unit,
   onTermsAndPrivacyClick: () -> Unit,
   onRestoreOrTransferClick: () -> Unit,
+  animationState: MutableTransitionState<Boolean>,
   modifier: Modifier = Modifier
 ) {
   RegistrationScreen(
@@ -193,42 +235,65 @@ private fun MediumLayout(
     content = {
       Box {
         Row(modifier = Modifier.fillMaxWidth()) {
-          HeroImage(
-            modifier = Modifier
-              .fillMaxHeight()
-              .weight(1f)
-              .padding(horizontal = 24.dp)
-          )
+          AnimatedVisibility(
+            visibleState = animationState,
+            enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+              slideInVertically(spring(stiffness = Spring.StiffnessLow)) { -it / 2 },
+            modifier = Modifier.weight(1f)
+          ) {
+            HeroImage(
+              modifier = Modifier
+                .fillMaxHeight()
+                .padding(horizontal = 24.dp)
+            )
+          }
 
-          Headline(
-            modifier = Modifier
-              .align(Alignment.CenterVertically)
-              .weight(1f)
-              .padding(horizontal = 24.dp)
-          )
+          AnimatedVisibility(
+            visibleState = animationState,
+            enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+              slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 },
+            modifier = Modifier.weight(1f)
+          ) {
+            Headline(
+              modifier = Modifier
+                .align(Alignment.CenterVertically)
+                .padding(horizontal = 24.dp)
+            )
+          }
         }
 
-        TermsAndPrivacy(
-          onTermsAndPrivacyClick = onTermsAndPrivacyClick,
+        AnimatedVisibility(
+          visibleState = animationState,
+          enter = fadeIn(spring(stiffness = Spring.StiffnessLow)),
           modifier = Modifier
             .align(Alignment.BottomCenter)
             .padding(bottom = 24.dp)
-        )
+        ) {
+          TermsAndPrivacy(
+            onTermsAndPrivacyClick = onTermsAndPrivacyClick
+          )
+        }
       }
     },
     footer = {
       val isWidthExpanded = currentWindowAdaptiveInfo().windowSizeClass.isWidthExpanded
 
-      Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Column(
-          modifier = Modifier
-            .widthIn(max = if (isWidthExpanded) 412.dp else 320.dp),
-          horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-          PrimaryDeviceCallToActionButtons(
-            onEvent = onEvent,
-            onRestoreOrTransferClick = onRestoreOrTransferClick
-          )
+      AnimatedVisibility(
+        visibleState = animationState,
+        enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+          slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it }
+      ) {
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+          Column(
+            modifier = Modifier
+              .widthIn(max = if (isWidthExpanded) 412.dp else 320.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+          ) {
+            PrimaryDeviceCallToActionButtons(
+              onEvent = onEvent,
+              onRestoreOrTransferClick = onRestoreOrTransferClick
+            )
+          }
         }
       }
     }
@@ -240,6 +305,7 @@ private fun LargeLayout(
   onEvent: (WelcomeScreenEvents) -> Unit,
   onTermsAndPrivacyClick: () -> Unit,
   onRestoreOrTransferClick: () -> Unit,
+  animationState: MutableTransitionState<Boolean>,
   modifier: Modifier = Modifier
 ) {
   RegistrationScreen(
@@ -249,11 +315,17 @@ private fun LargeLayout(
         horizontalArrangement = SpaceAround,
         modifier = Modifier.padding(vertical = 56.dp)
       ) {
-        HeroImage(
-          modifier = Modifier
-            .weight(1f)
-            .fillMaxHeight()
-        )
+        AnimatedVisibility(
+          visibleState = animationState,
+          enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+            slideInVertically(spring(stiffness = Spring.StiffnessLow)) { -it / 2 },
+          modifier = Modifier.weight(1f)
+        ) {
+          HeroImage(
+            modifier = Modifier
+              .fillMaxHeight()
+          )
+        }
 
         Box(
           contentAlignment = Alignment.Center,
@@ -268,23 +340,36 @@ private fun LargeLayout(
               .widthIn(max = 320.dp)
               .fillMaxWidth()
           ) {
-            Headline(
-              style = MaterialTheme.typography.headlineLarge
-            )
+            AnimatedVisibility(
+              visibleState = animationState,
+              enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+                slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it / 2 }
+            ) {
+              Headline(
+                style = MaterialTheme.typography.headlineLarge
+              )
+            }
 
             Spacer(modifier = Modifier.height(77.dp))
 
-            TermsAndPrivacy(
-              onTermsAndPrivacyClick = onTermsAndPrivacyClick,
-              modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(bottom = 8.dp)
-            )
+            AnimatedVisibility(
+              visibleState = animationState,
+              enter = fadeIn(spring(stiffness = Spring.StiffnessLow)) +
+                slideInVertically(spring(stiffness = Spring.StiffnessLow)) { it }
+            ) {
+              Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                TermsAndPrivacy(
+                  onTermsAndPrivacyClick = onTermsAndPrivacyClick,
+                  modifier = Modifier
+                    .padding(bottom = 8.dp)
+                )
 
-            PrimaryDeviceCallToActionButtons(
-              onEvent = onEvent,
-              onRestoreOrTransferClick = onRestoreOrTransferClick
-            )
+                PrimaryDeviceCallToActionButtons(
+                  onEvent = onEvent,
+                  onRestoreOrTransferClick = onRestoreOrTransferClick
+                )
+              }
+            }
           }
         }
       }
@@ -296,10 +381,18 @@ private fun LargeLayout(
 private fun HeroImage(
   modifier: Modifier = Modifier
 ) {
+  val scale by animateFloatAsState(
+    targetValue = 1f,
+    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+    label = "HeroImageScale"
+  )
+
   Image(
     painter = painterResource(R.drawable.welcome),
     contentDescription = null,
-    modifier = modifier,
+    modifier = modifier
+      .scale(scale)
+      .clip(RoundedCornerShape(28.dp)),
     contentScale = ContentScale.Fit
   )
 }
@@ -312,7 +405,11 @@ private fun Headline(
 ) {
   Text(
     text = stringResource(R.string.RegistrationActivity_take_privacy_with_you_be_yourself_in_every_message),
-    style = style,
+    style = style.copy(
+      fontWeight = FontWeight.Bold,
+      lineHeight = 36.sp,
+      letterSpacing = (-0.5).sp
+    ),
     textAlign = textAlign,
     modifier = modifier
       .testTag(TestTags.WELCOME_HEADLINE)
@@ -349,21 +446,24 @@ private fun PrimaryDeviceCallToActionButtons(
       .fillMaxWidth()
       .testTag(TestTags.WELCOME_GET_STARTED_BUTTON)
   ) {
-    Text(stringResource(R.string.RegistrationActivity_continue))
+    Text(
+      text = stringResource(R.string.RegistrationActivity_continue),
+      style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+    )
   }
 
-  Spacer(modifier = Modifier.height(17.dp))
+  Spacer(modifier = Modifier.height(12.dp))
 
   Buttons.LargeTonal(
     onClick = onRestoreOrTransferClick,
-    colors = ButtonDefaults.filledTonalButtonColors(
-      containerColor = SignalTheme.colors.colorSurface2
-    ),
     modifier = Modifier
       .fillMaxWidth()
       .testTag(TestTags.WELCOME_RESTORE_OR_TRANSFER_BUTTON)
   ) {
-    Text(stringResource(R.string.registration_activity__restore_or_transfer))
+    Text(
+      text = stringResource(R.string.registration_activity__restore_or_transfer),
+      style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+    )
   }
 }
 
@@ -473,36 +573,57 @@ private fun RestoreActionRow(
   modifier: Modifier = Modifier,
   onRowClick: () -> Unit = {}
 ) {
-  Row(
-    verticalAlignment = Alignment.CenterVertically,
+  ElevatedCard(
+    onClick = onRowClick,
+    shape = RoundedCornerShape(28.dp),
+    colors = CardDefaults.elevatedCardColors(
+      containerColor = MaterialTheme.colorScheme.surface
+    ),
     modifier = modifier
       .horizontalGutters()
       .padding(vertical = 8.dp)
       .fillMaxWidth()
-      .clip(RoundedCornerShape(18.dp))
-      .background(MaterialTheme.colorScheme.background)
-      .clickable(enabled = true, onClick = onRowClick)
-      .padding(horizontal = 24.dp, vertical = 16.dp)
   ) {
-    Icon(
-      painter = icon,
-      tint = MaterialTheme.colorScheme.primary,
-      contentDescription = null,
-      modifier = Modifier.size(44.dp)
-    )
-
-    Column(
-      modifier = Modifier.padding(start = 16.dp)
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier.padding(24.dp)
     ) {
-      Text(
-        text = title,
-        style = MaterialTheme.typography.bodyLarge
-      )
+      Box(
+        modifier = Modifier
+          .size(48.dp)
+          .clip(RoundedCornerShape(12.dp))
+          .background(MaterialTheme.colorScheme.primaryContainer),
+        contentAlignment = Alignment.Center
+      ) {
+        Icon(
+          painter = icon,
+          tint = MaterialTheme.colorScheme.primary,
+          contentDescription = null,
+          modifier = Modifier.size(32.dp)
+        )
+      }
 
-      Text(
-        text = subtitle,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
+      Column(
+        modifier = Modifier
+          .padding(start = 20.dp)
+          .weight(1f)
+      ) {
+        Text(
+          text = title,
+          style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+        )
+
+        Text(
+          text = subtitle,
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+      }
+
+      Icon(
+        imageVector = SignalIcons.ChevronRight.imageVector,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant
       )
     }
   }

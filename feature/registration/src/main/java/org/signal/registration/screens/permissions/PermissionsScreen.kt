@@ -8,7 +8,15 @@
 package org.signal.registration.screens.permissions
 
 import android.Manifest
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Arrangement.SpaceAround
 import androidx.compose.foundation.layout.Box
@@ -18,22 +26,32 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import org.signal.core.ui.WindowBreakpoint
@@ -108,13 +126,18 @@ private fun CompactLayout(
   permissionsState: MultiplePermissionsState,
   onProceed: () -> Unit
 ) {
+  val animationState = remember {
+    MutableTransitionState(false).apply {
+      targetState = true
+    }
+  }
+
   RegistrationScreen(
     modifier = modifier.fillMaxSize(),
     content = {
       Box(
         modifier = Modifier
-          .fillMaxWidth()
-          .fillMaxHeight()
+          .fillMaxSize()
           .padding(top = 24.dp),
         contentAlignment = Alignment.BottomCenter
       ) {
@@ -127,25 +150,53 @@ private fun CompactLayout(
             .padding(top = 16.dp)
             .horizontalGutters()
         ) {
-          Text(
-            text = stringResource(id = R.string.GrantPermissionsFragment__allow_permissions),
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.fillMaxWidth()
-          )
+          AnimatedVisibility(
+            visibleState = animationState,
+            enter = fadeIn(animationSpec = tween(1000)) + slideInVertically(initialOffsetY = { -40 }, animationSpec = spring(stiffness = Spring.StiffnessLow))
+          ) {
+            Text(
+              text = stringResource(id = R.string.GrantPermissionsFragment__allow_permissions),
+              style = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = (-0.5).sp
+              ),
+              modifier = Modifier.fillMaxWidth()
+            )
+          }
 
-          Text(
-            text = stringResource(id = R.string.GrantPermissionsFragment__to_help_you_message_people_you_know),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 16.dp, bottom = 40.dp)
-          )
+          AnimatedVisibility(
+            visibleState = animationState,
+            enter = fadeIn(animationSpec = tween(1000, delayMillis = 200)) + slideInVertically(initialOffsetY = { 40 }, animationSpec = spring(stiffness = Spring.StiffnessLow))
+          ) {
+            Text(
+              text = stringResource(id = R.string.GrantPermissionsFragment__to_help_you_message_people_you_know),
+              style = MaterialTheme.typography.bodyLarge,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier.padding(top = 16.dp, bottom = 40.dp)
+            )
+          }
 
-          PermissionList(permissions)
+          AnimatedVisibility(
+            visibleState = animationState,
+            enter = fadeIn(animationSpec = tween(1000, delayMillis = 400)) + slideInVertically(initialOffsetY = { 40 }, animationSpec = spring(stiffness = Spring.StiffnessLow))
+          ) {
+            PermissionList(permissions)
+          }
 
           Spacer(modifier = Modifier.padding(48.dp))
         }
 
-        PermissionButtons(onProceed, permissionsState, scrollState.canScrollForward)
+        Surface(
+          modifier = Modifier.fillMaxWidth(),
+          shadowElevation = if (scrollState.canScrollForward) 8.dp else 0.dp
+        ) {
+          AnimatedVisibility(
+            visibleState = animationState,
+            enter = fadeIn(animationSpec = tween(1000, delayMillis = 600)) + slideInVertically(initialOffsetY = { 80 }, animationSpec = spring(stiffness = Spring.StiffnessLow))
+          ) {
+            PermissionButtons(onProceed, permissionsState)
+          }
+        }
       }
     }
   )
@@ -158,6 +209,12 @@ private fun MediumLayout(
   permissionsState: MultiplePermissionsState,
   onProceed: () -> Unit
 ) {
+  val animationState = remember {
+    MutableTransitionState(false).apply {
+      targetState = true
+    }
+  }
+
   RegistrationScreen(
     modifier = modifier.fillMaxSize(),
     content = {
@@ -170,18 +227,31 @@ private fun MediumLayout(
             .weight(1f)
             .padding(horizontal = 24.dp)
         ) {
-          Text(
-            text = stringResource(id = R.string.GrantPermissionsFragment__allow_permissions),
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.fillMaxWidth()
-          )
+          AnimatedVisibility(
+            visibleState = animationState,
+            enter = fadeIn(animationSpec = tween(1000)) + slideInVertically(initialOffsetY = { -40 }, animationSpec = spring(stiffness = Spring.StiffnessLow))
+          ) {
+            Text(
+              text = stringResource(id = R.string.GrantPermissionsFragment__allow_permissions),
+              style = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = (-0.5).sp
+              ),
+              modifier = Modifier.fillMaxWidth()
+            )
+          }
 
-          Text(
-            text = stringResource(id = R.string.GrantPermissionsFragment__to_help_you_message_people_you_know),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 16.dp)
-          )
+          AnimatedVisibility(
+            visibleState = animationState,
+            enter = fadeIn(animationSpec = tween(1000, delayMillis = 200)) + slideInVertically(initialOffsetY = { 40 }, animationSpec = spring(stiffness = Spring.StiffnessLow))
+          ) {
+            Text(
+              text = stringResource(id = R.string.GrantPermissionsFragment__to_help_you_message_people_you_know),
+              style = MaterialTheme.typography.bodyLarge,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier.padding(top = 16.dp)
+            )
+          }
         }
 
         Box(
@@ -198,15 +268,29 @@ private fun MediumLayout(
               .verticalScroll(scrollState)
               .padding(horizontal = 24.dp)
           ) {
-            PermissionList(permissions)
+            AnimatedVisibility(
+              visibleState = animationState,
+              enter = fadeIn(animationSpec = tween(1000, delayMillis = 400)) + slideInVertically(initialOffsetY = { 40 }, animationSpec = spring(stiffness = Spring.StiffnessLow))
+            ) {
+              PermissionList(permissions)
+            }
             Spacer(modifier = Modifier.padding(48.dp))
           }
 
-          PermissionButtons(
-            onProceed,
-            permissionsState,
-            scrollState.canScrollForward
-          )
+          Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shadowElevation = if (scrollState.canScrollForward) 8.dp else 0.dp
+          ) {
+            androidx.compose.animation.AnimatedVisibility(
+              visibleState = animationState,
+              enter = fadeIn(animationSpec = tween(1000, delayMillis = 600)) + slideInVertically(initialOffsetY = { 80 }, animationSpec = spring(stiffness = Spring.StiffnessLow))
+            ) {
+              PermissionButtons(
+                onProceed,
+                permissionsState
+              )
+            }
+          }
         }
       }
     }
@@ -220,6 +304,12 @@ private fun LargeLayout(
   permissionsState: MultiplePermissionsState,
   onProceed: () -> Unit
 ) {
+  val animationState = remember {
+    MutableTransitionState(false).apply {
+      targetState = true
+    }
+  }
+
   RegistrationScreen(
     modifier = modifier.fillMaxSize(),
     content = {
@@ -232,18 +322,31 @@ private fun LargeLayout(
             .weight(1f)
             .padding(horizontal = 24.dp)
         ) {
-          Text(
-            text = stringResource(id = R.string.GrantPermissionsFragment__allow_permissions),
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.fillMaxWidth()
-          )
+          AnimatedVisibility(
+            visibleState = animationState,
+            enter = fadeIn(animationSpec = tween(1000)) + slideInVertically(initialOffsetY = { -40 }, animationSpec = spring(stiffness = Spring.StiffnessLow))
+          ) {
+            Text(
+              text = stringResource(id = R.string.GrantPermissionsFragment__allow_permissions),
+              style = MaterialTheme.typography.headlineMedium.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = (-0.5).sp
+              ),
+              modifier = Modifier.fillMaxWidth()
+            )
+          }
 
-          Text(
-            text = stringResource(id = R.string.GrantPermissionsFragment__to_help_you_message_people_you_know),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 16.dp)
-          )
+          AnimatedVisibility(
+            visibleState = animationState,
+            enter = fadeIn(animationSpec = tween(1000, delayMillis = 200)) + slideInVertically(initialOffsetY = { 40 }, animationSpec = spring(stiffness = Spring.StiffnessLow))
+          ) {
+            Text(
+              text = stringResource(id = R.string.GrantPermissionsFragment__to_help_you_message_people_you_know),
+              style = MaterialTheme.typography.bodyLarge,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              modifier = Modifier.padding(top = 16.dp)
+            )
+          }
         }
 
         Box(
@@ -260,15 +363,29 @@ private fun LargeLayout(
               .verticalScroll(scrollState)
               .padding(horizontal = 24.dp)
           ) {
-            PermissionList(permissions)
+            AnimatedVisibility(
+              visibleState = animationState,
+              enter = fadeIn(animationSpec = tween(1000, delayMillis = 400)) + slideInVertically(initialOffsetY = { 40 }, animationSpec = spring(stiffness = Spring.StiffnessLow))
+            ) {
+              PermissionList(permissions)
+            }
             Spacer(modifier = Modifier.padding(48.dp))
           }
 
-          PermissionButtons(
-            onProceed,
-            permissionsState,
-            scrollState.canScrollForward
-          )
+          Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shadowElevation = if (scrollState.canScrollForward) 8.dp else 0.dp
+          ) {
+            androidx.compose.animation.AnimatedVisibility(
+              visibleState = animationState,
+              enter = fadeIn(animationSpec = tween(1000, delayMillis = 600)) + slideInVertically(initialOffsetY = { 80 }, animationSpec = spring(stiffness = Spring.StiffnessLow))
+            ) {
+              PermissionButtons(
+                onProceed,
+                permissionsState
+              )
+            }
+          }
         }
       }
     }
@@ -323,44 +440,56 @@ private fun PermissionRow(
   title: String,
   subtitle: String
 ) {
-  Row(modifier = Modifier.padding(bottom = 32.dp)) {
-    Image(
-      imageVector = imageVector,
-      contentDescription = null,
-      modifier = Modifier.size(48.dp)
-    )
+  Row(
+    modifier = Modifier
+      .padding(bottom = 16.dp)
+      .fillMaxWidth()
+      .clip(RoundedCornerShape(28.dp))
+      .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+      .padding(16.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Box(
+      modifier = Modifier
+        .size(48.dp)
+        .clip(RoundedCornerShape(12.dp))
+        .background(MaterialTheme.colorScheme.primaryContainer),
+      contentAlignment = Alignment.Center
+    ) {
+      Image(
+        imageVector = imageVector,
+        contentDescription = null,
+        modifier = Modifier.size(24.dp)
+      )
+    }
 
     Spacer(modifier = Modifier.size(16.dp))
 
     Column {
       Text(
         text = title,
-        style = MaterialTheme.typography.titleSmall
+        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
       )
 
       Text(
         text = subtitle,
+        style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant
       )
     }
-
-    Spacer(modifier = Modifier.size(32.dp))
   }
 }
 
 @Composable
-private fun PermissionButtons(onProceed: () -> Unit, permissionsState: MultiplePermissionsState, canScrollForward: Boolean) {
-  Surface(
-    modifier = Modifier.fillMaxWidth(),
-    shadowElevation = if (canScrollForward) 8.dp else 0.dp
+private fun PermissionButtons(onProceed: () -> Unit, permissionsState: MultiplePermissionsState) {
+  Row(
+    horizontalArrangement = Arrangement.Absolute.Right,
+    verticalAlignment = Alignment.CenterVertically,
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(vertical = 24.dp)
+      .horizontalGutters()
   ) {
-    Row(
-      horizontalArrangement = Arrangement.Absolute.Right,
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(vertical = 16.dp)
-        .horizontalGutters()
-    ) {
       TextButton(
         modifier = Modifier
           .weight(weight = 1f, fill = false)
@@ -368,14 +497,18 @@ private fun PermissionButtons(onProceed: () -> Unit, permissionsState: MultipleP
         onClick = onProceed
       ) {
         Text(
-          text = stringResource(id = R.string.GrantPermissionsFragment__not_now)
+          text = stringResource(id = R.string.GrantPermissionsFragment__not_now),
+          style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
         )
       }
 
       Spacer(modifier = Modifier.size(24.dp))
 
       Buttons.LargeTonal(
-        modifier = Modifier.testTag(TestTags.PERMISSIONS_NEXT_BUTTON),
+        modifier = Modifier
+          .testTag(TestTags.PERMISSIONS_NEXT_BUTTON)
+          .weight(1f),
+        shape = RoundedCornerShape(28.dp),
         onClick = {
           if (permissionsState.allPermissionsGranted) {
             onProceed()
@@ -385,11 +518,11 @@ private fun PermissionButtons(onProceed: () -> Unit, permissionsState: MultipleP
         }
       ) {
         Text(
-          text = stringResource(id = R.string.GrantPermissionsFragment__next)
+          text = stringResource(id = R.string.GrantPermissionsFragment__next),
+          style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
         )
       }
     }
-  }
 }
 
 @AllDevicePreviews

@@ -236,7 +236,7 @@ fun RegistrationNavHost(
       if (targetState.key == RegistrationRoute.CountryCodePicker.toString()) {
         TransitionSpecs.VerticalSlide.transitionSpec.invoke(this)
       } else {
-        TransitionSpecs.HorizontalSlide.transitionSpec.invoke(this)
+        TransitionSpecs.Expressive.transitionSpec.invoke(this)
       }
     },
     popTransitionSpec = {
@@ -245,20 +245,20 @@ fun RegistrationNavHost(
           TransitionSpecs.VerticalSlide.popTransitionSpec.invoke(this)
         }
         initialState.key == RegistrationRoute.EnterAepScreen.toString() -> {
-          TransitionSpecs.HorizontalSlide.transitionSpec.invoke(this)
+          TransitionSpecs.Expressive.transitionSpec.invoke(this)
         }
         initialState.key == RegistrationRoute.LocalBackupRestore.toString() && targetState.key == RegistrationRoute.PhoneNumberEntry.toString() -> {
-          TransitionSpecs.HorizontalSlide.transitionSpec.invoke(this)
+          TransitionSpecs.Expressive.transitionSpec.invoke(this)
         }
         else -> {
-          TransitionSpecs.HorizontalSlide.popTransitionSpec.invoke(this)
+          TransitionSpecs.Expressive.popTransitionSpec.invoke(this)
         }
       }
     },
     predictivePopTransitionSpec = {
       when (initialState.key) {
         RegistrationRoute.CountryCodePicker.toString() -> TransitionSpecs.VerticalSlide.predictivePopTransitionSpec.invoke(this, it)
-        else -> TransitionSpecs.HorizontalSlide.predictivePopTransitionSpec.invoke(this, it)
+        else -> TransitionSpecs.Expressive.popTransitionSpec.invoke(this)
       }
     }
   )
